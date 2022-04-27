@@ -59,6 +59,9 @@ class CryptSM2(object):
         self.ecc_table = ecc_table
 
     def _decode_key(self, pem_key):
+        if pem_key is None or pem_key == "":
+            return None
+
         try:
             r_start = re.compile(r"\s*-----BEGIN (.*)KEY-----\s+")
             r_end = re.compile(r"-----END (.*)KEY-----\s*$")

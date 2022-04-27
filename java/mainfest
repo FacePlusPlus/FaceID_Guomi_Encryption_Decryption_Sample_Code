@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+Created-By: 1.8.0_151 (Oracle Corporation)
+Main-Class: com.megvii.bouncycastle.crypto.engines.TestCryptTextAndFil
+ e
+Class-Path: libs/bcpkix-jdk15on-1.65.jar  libs/bcprov-jdk15on-1.65.jar libs/hutool-all-5.7.11-sources.jar libs/hutool-all-5.7.11.jar libs/javabase64-1.3.1.jar
+
