@@ -29,6 +29,12 @@ import org.bouncycastle.util.BigIntegers;
 import org.bouncycastle.util.Memoable;
 import org.bouncycastle.util.Pack;
 
+/**
+ * 修复 org.bouncycastle.crypto.engines.SM2Engine类中，加解密没有支持ASN1序列化的BUG。
+ * 根据之前某个版本的SM2标准，C1是P点的坐标，C2是加密密文，C3是HASH值，并未强调ASN1序列化。
+ * 因国密标准不严谨的问题，原jar包没有对记过进行ASN1编码，但 openssl，C，python，golang等多种语音的库，均需要对结果做ASN1.
+ * 为了统一标准，该类的加密增加了对结果的ASN1.
+ */
 public class ASN1SM2Engine {
     private final Digest digest;
     private final ASN1SM2Engine.Mode mode;
@@ -39,18 +45,34 @@ public class ASN1SM2Engine {
     private SecureRandom random;
     private boolean isDebug = false;
 
+    /**
+     * 构造函数，同org.bouncycastle.crypto.engines.SM2Engine
+     */
     public ASN1SM2Engine() {
         this((Digest) (new SM3Digest()));
     }
 
+    /**
+     * 构造函数，同org.bouncycastle.crypto.engines.SM2Engine
+     * @param var1
+     */
     public ASN1SM2Engine(ASN1SM2Engine.Mode var1) {
         this(new SM3Digest(), var1);
     }
 
+    /**
+     * 构造函数，同org.bouncycastle.crypto.engines.SM2Engine
+     * @param var1
+     */
     public ASN1SM2Engine(Digest var1) {
         this(var1, ASN1SM2Engine.Mode.C1C2C3);
     }
 
+    /**
+     * 构造函数，同org.bouncycastle.crypto.engines.SM2Engine
+     * @param var1
+     * @param var2
+     */
     public ASN1SM2Engine(Digest var1, ASN1SM2Engine.Mode var2) {
         if (var2 == null) {
             throw new IllegalArgumentException("mode cannot be NULL");
@@ -60,10 +82,19 @@ public class ASN1SM2Engine {
         }
     }
 
+    /**
+     * 是否输出调试日志
+     * @param flag
+     */
     public void setDebug(boolean flag) {
         isDebug = flag;
     }
 
+    /**
+     * 初始化接口，同org.bouncycastle.crypto.engines.SM2Engine.init
+     * @param var1
+     * @param var2
+     */
     public void init(boolean var1, CipherParameters var2) {
         this.forEncryption = var1;
         if (var1) {
@@ -84,18 +115,43 @@ public class ASN1SM2Engine {
         this.curveLength = (this.ecParams.getCurve().getFieldSize() + 7) / 8;
     }
 
+    /**
+     * 区块加解密，同org.bouncycastle.crypto.engines.SM2Engine.processBlock
+     * @param var1
+     * @param var2
+     * @param var3
+     * @return
+     * @throws InvalidCipherTextException
+     */
     public byte[] processBlock(byte[] var1, int var2, int var3) throws InvalidCipherTextException {
         return this.forEncryption ? this.encrypt(var1, var2, var3) : this.decrypt(var1, var2, var3);
     }
 
+    /**
+     * 获取输出长度，同org.bouncycastle.crypto.engines.SM2Engine.getOutputSize
+     * @param var1
+     * @return
+     */
     public int getOutputSize(int var1) {
         return 1 + 2 * this.curveLength + var1 + this.digest.getDigestSize();
     }
 
+    /**
+     * 创建basePoint，同同org.bouncycastle.crypto.engines.SM2Engine.createBasePointMultiplier
+     * @return
+     */
     protected ECMultiplier createBasePointMultiplier() {
         return new FixedPointCombMultiplier();
     }
 
+    /**
+     * 加密函数，增加对结果的ASN1编码
+     * @param var1
+     * @param var2
+     * @param var3
+     * @return
+     * @throws InvalidCipherTextException
+     */
     private byte[] encrypt(byte[] var1, int var2, int var3) throws InvalidCipherTextException {
         if (isDebug) {
             System.out.println("encrypt start .....");
@@ -128,6 +184,9 @@ public class ASN1SM2Engine {
 
         ASN1EncodableVector asn1EncodableVector = new ASN1EncodableVector();
 
+        /**
+         * 对结果进行编码
+         */
         ASN1Integer x = new ASN1Integer(C1.getXCoord().toBigInteger());
         ASN1Integer y = new ASN1Integer(C1.getYCoord().toBigInteger());
 
@@ -157,6 +216,9 @@ public class ASN1SM2Engine {
             e.printStackTrace();
         }
 
+        /**
+         * 调试日志
+         */
         if (isDebug) {
             System.out.print("C1 : " + C1.getEncoded(false).length + "  [");
             for (byte b : C1.getEncoded(false)) {
@@ -181,7 +243,18 @@ public class ASN1SM2Engine {
         return ret;
     }
 
+    /**
+     * 解密接口，增加ASN1解码
+     * @param var1
+     * @param var2
+     * @param var3
+     * @return
+     * @throws InvalidCipherTextException
+     */
     private byte[] decrypt(byte[] var1, int var2, int var3) throws InvalidCipherTextException {
+        /**
+         * 调试日志
+         */
         if (isDebug) {
             System.out.println("decrypt start .....");
             System.out.println("mode : " + this.mode);
@@ -193,6 +266,9 @@ public class ASN1SM2Engine {
         }
 
         try {
+            /**
+             * 对结果进行解码
+             */
             ASN1InputStream aIn = new ASN1InputStream(var1);
             ASN1Sequence seq = (ASN1Sequence) aIn.readObject();
             aIn.close();
@@ -293,6 +369,13 @@ public class ASN1SM2Engine {
         }
     }
 
+    /**
+     * 同org.bouncycastle.crypto.engines.SM2Engine.notEncrypted
+     * @param var1
+     * @param var2
+     * @param var3
+     * @return
+     */
     private boolean notEncrypted(byte[] var1, byte[] var2, int var3) {
         for (int var4 = 0; var4 != var1.length; ++var4) {
             if (var1[var4] != var2[var3 + var4]) {
@@ -303,6 +386,12 @@ public class ASN1SM2Engine {
         return true;
     }
 
+    /**
+     * 计算KDF,同org.bouncycastle.crypto.engines.SM2Engine.kdf
+     * @param var1
+     * @param var2
+     * @param var3
+     */
     private void kdf(Digest var1, ECPoint var2, byte[] var3) {
         int var4 = var1.getDigestSize();
         byte[] var5 = new byte[Math.max(4, var4)];
@@ -335,6 +424,13 @@ public class ASN1SM2Engine {
 
     }
 
+    /**
+     * 计算XOR，同org.bouncycastle.crypto.engines.SM2Engine.xor
+     * @param var1
+     * @param var2
+     * @param var3
+     * @param var4
+     */
     private void xor(byte[] var1, byte[] var2, int var3, int var4) {
         for (int var5 = 0; var5 != var4; ++var5) {
             var1[var3 + var5] ^= var2[var5];
@@ -342,6 +438,10 @@ public class ASN1SM2Engine {
 
     }
 
+    /**
+     * 同org.bouncycastle.crypto.engines.SM2Engine.nextK
+     * @return
+     */
     private BigInteger nextK() {
         int var1 = this.ecParams.getN().bitLength();
 
@@ -355,6 +455,11 @@ public class ASN1SM2Engine {
         return var2;
     }
 
+    /**
+     * 同org.bouncycastle.crypto.engines.SM2Engine.addFieldElement
+     * @param var1
+     * @param var2
+     */
     private void addFieldElement(Digest var1, ECFieldElement var2) {
         byte[] var3 = BigIntegers.asUnsignedByteArray(this.curveLength, var2.toBigInteger());
         var1.update(var3, 0, var3.length);
