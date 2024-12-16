@@ -19,6 +19,12 @@ import cn.hutool.crypto.SecureUtil;
 public class TestCryptTextAndFile {
 
 
+    /**
+     * 加密文本示例
+     * @param textMessage
+     * @param publicKey
+     * @return
+     */
     public String encryptText(String textMessage, ECPublicKeyParameters publicKey) {
         ASN1SM2Engine sm2Engine = new ASN1SM2Engine(ASN1SM2Engine.Mode.C1C3C2);
         sm2Engine.init(true, (CipherParameters) (new ParametersWithRandom(publicKey)));
@@ -34,6 +40,12 @@ public class TestCryptTextAndFile {
         return resStr;
     }
 
+    /**
+     * 解密文本示例
+     * @param textMessage
+     * @param privateKey
+     * @return
+     */
     public String decryptText(String textMessage, ECPrivateKeyParameters privateKey) {
         ASN1SM2Engine sm2Engine = new ASN1SM2Engine(ASN1SM2Engine.Mode.C1C3C2);
         sm2Engine.init(false, (CipherParameters) (privateKey));
@@ -51,6 +63,12 @@ public class TestCryptTextAndFile {
     }
 
 
+    /**
+     * 加密文件示例
+     * @param file
+     * @param publicKey
+     * @return
+     */
     public String encodeFile(File file, ECPublicKeyParameters publicKey) {
         if (file == null || !file.exists() || file.isDirectory()) {
             return null;
@@ -94,6 +112,13 @@ public class TestCryptTextAndFile {
         return resStr;
     }
 
+    /**
+     * 解密文件示例
+     * @param fileStr
+     * @param resFile
+     * @param privateKey
+     * @return
+     */
     public boolean decodeFile(String fileStr, File resFile, ECPrivateKeyParameters privateKey) {
         boolean flag = false;
 
@@ -131,6 +156,10 @@ public class TestCryptTextAndFile {
 //    TnvugvpEFQ8ZHpXW3ykkZOctSkfD9Q7lhIXtJp5zFGwYkObu52FYOPzysw==
 //            -----END PUBLIC KEY-----
 
+    /**
+     * 调用Demo:
+     * @param args
+     */
     public static void main(String[] args) {
 
         String privateKeyStr =
